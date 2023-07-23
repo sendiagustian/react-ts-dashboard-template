@@ -14,7 +14,7 @@ import {
     updateDoc,
     AddPrefixToKeys,
 } from "firebase/firestore";
-import { UserFirestoreModel } from "../../../models/UserFirebaseModel";
+import { UserFirestoreModel } from "../../../models/UserFirestoreModel";
 
 export const getDataUsers = async (): Promise<UserFirestoreModel[]> => {
     const listUsers: Array<UserFirestoreModel> = [];

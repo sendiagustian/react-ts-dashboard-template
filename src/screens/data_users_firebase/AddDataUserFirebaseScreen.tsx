@@ -14,7 +14,7 @@ import { SyntheticEvent, useState } from "react";
 import { routeDataUsersFirebase } from "../../routes/AppRoutes";
 import { v4 as uuid } from "uuid";
 
-import { UserFirestoreModel } from "../../models/UserFirebaseModel";
+import { UserFirestoreModel } from "../../models/UserFirestoreModel";
 import { roles } from "./data/ListRoles";
 import { addUser } from "./queries/QueryUsersFirestore";
 

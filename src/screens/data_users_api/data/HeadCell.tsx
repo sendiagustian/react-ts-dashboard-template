@@ -1,8 +1,8 @@
-import { UserModelAPIModel } from "../../../models/UserModelAPIModel";
+import { UserAPIModel } from "../../../models/UserAPIModel";
 
 export interface HeadCell {
     disablePadding: boolean;
-    id: keyof UserModelAPIModel;
+    id: keyof UserAPIModel;
     label: string;
     numeric: boolean;
 }
@@ -12,7 +12,7 @@ export const headCells: readonly HeadCell[] = [
         id: "name",
         numeric: false,
         disablePadding: true,
-        label: "Full Name",
+        label: "Name",
     },
     {
         id: "email",

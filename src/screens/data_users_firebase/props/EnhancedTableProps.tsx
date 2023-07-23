@@ -1,5 +1,5 @@
-import { UserFirestoreModel } from "../../../models/UserFirebaseModel";
-import { Order } from "./Order";
+import { UserFirestoreModel } from "../../../models/UserFirestoreModel";
+import { Order } from "../data/Order";
 
 export interface EnhancedTableProps {
     numSelected: number;

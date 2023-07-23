@@ -1,4 +1,4 @@
-import { UserFirestoreModel } from "../../../models/UserFirebaseModel";
+import { UserFirestoreModel } from "../../../models/UserFirestoreModel";
 
 export interface HeadCell {
     disablePadding: boolean;

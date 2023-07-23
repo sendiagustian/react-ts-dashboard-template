@@ -15,7 +15,7 @@ import { routeDataUsersFirebase } from "../../routes/AppRoutes";
 
 import { roles } from "./data/ListRoles";
 import slugify from "react-slugify";
-import { UserFirestoreModel } from "../../models/UserFirebaseModel";
+import { UserFirestoreModel } from "../../models/UserFirestoreModel";
 import { toPascalCase } from "../../utils/ConvertString";
 import { updateUser } from "./queries/QueryUsersFirestore";
 

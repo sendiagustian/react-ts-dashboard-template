@@ -20,20 +20,22 @@ import AppBreadcrumbs from "../../components/Breadcrumbs";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 
 import { alpha } from "@mui/material/styles";
 import { visuallyHidden } from "@mui/utils";
 import { useEffect, useMemo, useState } from "react";
-import { UserFirestoreModel } from "../../models/UserFirebaseModel";
+import { UserFirestoreModel } from "../../models/UserFirestoreModel";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { routeAddDataUsersFirebase, routeUpdateDataUsersFirebase } from "../../routes/AppRoutes";
 import { headCells } from "./data/HeadCell";
-import { EnhancedTableProps } from "./data/EnhancedTableProps";
+import { EnhancedTableProps } from "./props/EnhancedTableProps";
 import { Order } from "./data/Order";
 import LoadingScreen from "../../components/LoadingScreen";
 import SearchBoxTable from "../../components/SearchBoxTable";
 import AppDialog from "../../components/AppDialog";
 import { deleteUser, getDataUsers } from "./queries/QueryUsersFirestore";
+import { EnhancedTableToolbarProps } from "./props/EnhancedTableToolbarProps";
 
 export default function DataUsersFirestoreScreen() {
     const [order, setOrder] = useState<Order>("asc");
@@ -49,6 +51,9 @@ export default function DataUsersFirestoreScreen() {
     const [openDialog, setOpenDialog] = useState<boolean>(false);
     const [loadingDialog, setLoadingDialog] = useState<boolean>(false);
     const [searchResults, setSearchResult] = useState<Array<UserFirestoreModel>>([]);
+
+    // Avoid a layout jump when reaching the last page with empty rows.
+    const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
     const navigate = useNavigate();
 
@@ -70,7 +75,7 @@ export default function DataUsersFirestoreScreen() {
         }
     }, [rows, order, orderBy, page, rowsPerPage, search, searchResults]);
 
-    const refreshData = () => {
+    const refreshData = async () => {
         getDataUsers().then((docs) => setRows(docs));
         setSelected([]);
     };
@@ -132,9 +137,6 @@ export default function DataUsersFirestoreScreen() {
 
     const isSelected = (docUid: string) => selected.indexOf(docUid) !== -1;
 
-    // Avoid a layout jump when reaching the last page with empty rows.
-    const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
     const handleDeletedOk = async () => {
         setLoadingDialog(true);
         if (selected.length == 1 && userDataSelected != null) {
@@ -148,14 +150,16 @@ export default function DataUsersFirestoreScreen() {
             if (selected.length > 0) {
                 let deletedProgress = 0;
                 selected.forEach(async (uid) => {
-                    deleteUser(uid);
                     deletedProgress++;
-                    if (selected.length == deletedProgress) {
-                        setLoadingDialog(false);
-                        setOpenDialog(false);
-                        refreshData();
-                        setSearch("");
-                    }
+                    deleteUser(uid).finally(() => {
+                        if (selected.length == deletedProgress) {
+                            refreshData().finally(() => {
+                                setLoadingDialog(false);
+                                setOpenDialog(false);
+                            });
+                            setSearch("");
+                        }
+                    });
                 });
             }
         }
@@ -166,7 +170,7 @@ export default function DataUsersFirestoreScreen() {
     } else {
         return (
             <Box sx={{ width: "100%" }}>
-                <AppBreadcrumbs mainMenu="UsersFirebaseFb" />
+                <AppBreadcrumbs mainMenu="DataUsersFb" />
                 <Stack direction="row" sx={{ mb: 2 }} justifyItems="end">
                     <Button
                         variant="contained"
@@ -189,6 +193,7 @@ export default function DataUsersFirestoreScreen() {
                         userData={userDataSelected}
                         open={openDialog}
                         setOpen={setOpenDialog}
+                        setSelected={setSelected}
                         children={
                             <SearchBoxTable
                                 datas={rows}
@@ -359,18 +364,13 @@ function EnhancedTableHead(props: EnhancedTableProps) {
     );
 }
 
-function EnhancedTableToolbar(props: {
-    numSelected: number;
-    children: JSX.Element;
-    userData?: UserFirestoreModel;
-    open: boolean;
-    setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     const navigate = useNavigate();
     const numSelected = props.numSelected;
     const children = props.children;
     const userData = props.userData;
     const setOpen = props.setOpen;
+    const setSelected = props.setSelected;
 
     return (
         <Toolbar
@@ -390,14 +390,21 @@ function EnhancedTableToolbar(props: {
                 children
             )}
             {numSelected > 1 ? (
-                <Tooltip title="Delete">
-                    <IconButton onClick={() => handleClickDeleteAllSelected(setOpen)} sx={{ color: "red" }}>
-                        <DeleteIcon />
-                    </IconButton>
-                </Tooltip>
+                <Stack direction="row">
+                    <Tooltip title="Delete">
+                        <IconButton onClick={() => handleClickDeleteAllSelected(setOpen)} sx={{ color: "red" }}>
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Clear Selected">
+                        <IconButton onClick={() => handleClickClearSelected(setSelected)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Tooltip>
+                </Stack>
             ) : numSelected == 1 ? (
                 <Stack direction="row">
-                    <Tooltip title="Filter list">
+                    <Tooltip title="Edit">
                         <IconButton onClick={() => (userData ? handleClickEdit(userData, navigate) : null)}>
                             <EditIcon />
                         </IconButton>
@@ -405,6 +412,11 @@ function EnhancedTableToolbar(props: {
                     <Tooltip title="Delete">
                         <IconButton onClick={() => handleClickDelete(setOpen)} sx={{ color: "red" }}>
                             <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Clear Selected">
+                        <IconButton onClick={() => handleClickClearSelected(setSelected)}>
+                            <CloseIcon />
                         </IconButton>
                     </Tooltip>
                 </Stack>
@@ -421,6 +433,10 @@ function handleClickEdit(userData: UserFirestoreModel, navigate: NavigateFunctio
 
 function handleClickDelete(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {
     setOpen(true);
+}
+
+function handleClickClearSelected(setSelected: React.Dispatch<React.SetStateAction<readonly string[]>>) {
+    setSelected([]);
 }
 
 function handleClickDeleteAllSelected(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {

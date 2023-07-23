@@ -16,73 +16,81 @@ import Tooltip from "@mui/material/Tooltip";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import AppBreadcrumbs from "../../components/Breadcrumbs";
-import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import EditIcon from "@mui/icons-material/Edit";
-import axios, { AxiosResponse } from "axios";
-import { useNavigate } from "react-router-dom";
+import CloseIcon from "@mui/icons-material/Close";
+
 import { alpha } from "@mui/material/styles";
 import { visuallyHidden } from "@mui/utils";
 import { useEffect, useMemo, useState } from "react";
-import { UserModelAPIModel } from "../../models/UserModelAPIModel";
+import { UserAPIModel } from "../../models/UserAPIModel";
+import { NavigateFunction, useNavigate } from "react-router-dom";
+import { routeAddDataUsersAPI, routeUpdateDataUsersAPI } from "../../routes/AppRoutes";
 import { headCells } from "./data/HeadCell";
+import { EnhancedTableProps } from "./props/EnhancedTableProps";
 import { Order } from "./data/Order";
-import { EnhancedTableProps } from "./data/EnhancedTableProps";
-import { EnhancedTableToolbarProps } from "./data/EnhancedTableToolbarProps";
-import { routeAddDataUsersAPI } from "../../routes/AppRoutes";
+import LoadingScreen from "../../components/LoadingScreen";
+import SearchBoxTable from "../../components/SearchBoxTable";
+import AppDialog from "../../components/AppDialog";
+import { EnhancedTableToolbarProps } from "./props/EnhancedTableToolbarProps";
+import { deleteUser, getAllUsers } from "./queries/QueryUserAPI";
 
-export default function DataUsersAPIScreen() {
+export default function DataUsersFirestoreScreen() {
     const [order, setOrder] = useState<Order>("asc");
-    const [orderBy, setOrderBy] = useState<keyof UserModelAPIModel>("name");
+    const [orderBy, setOrderBy] = useState<keyof UserAPIModel>("name");
+    const [dense, setDense] = useState<boolean>(false);
+    const [onLoad, setLoad] = useState<boolean>(true);
+    const [search, setSearch] = useState<string>("");
     const [selected, setSelected] = useState<readonly number[]>([]);
-    const [page, setPage] = useState(0);
-    const [dense, setDense] = useState(false);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [rows, setRows] = useState<Array<UserModelAPIModel>>([]);
+    const [page, setPage] = useState<number>(0);
+    const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+    const [rows, setRows] = useState<Array<UserAPIModel>>([]);
+    const [userDataSelected, setUserDataSelected] = useState<UserAPIModel>();
+    const [openDialog, setOpenDialog] = useState<boolean>(false);
+    const [loadingDialog, setLoadingDialog] = useState<boolean>(false);
+    const [searchResults, setSearchResult] = useState<Array<UserAPIModel>>([]);
 
     // Avoid a layout jump when reaching the last page with empty rows.
     const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
+    const navigate = useNavigate();
+
     useEffect(() => {
-        getDataUsers().then((res) => {
-            setRows(res);
-        });
+        setLoad(true);
+        getAllUsers()
+            .then((res) => setRows(res))
+            .finally(() => setLoad(false));
     }, []);
 
     const visibleRows = useMemo(() => {
-        return stableSort<UserModelAPIModel>(rows, getComparator(order, orderBy)).slice(
-            page * rowsPerPage,
-            page * rowsPerPage + rowsPerPage
-        );
-    }, [rows, order, orderBy, page, rowsPerPage]);
+        if (search != "" && search.length > 3) {
+            return searchResults;
+        } else {
+            return stableSort<UserAPIModel>(rows, getComparator(order, orderBy)).slice(
+                page * rowsPerPage,
+                page * rowsPerPage + rowsPerPage
+            );
+        }
+    }, [rows, order, orderBy, page, rowsPerPage, search, searchResults]);
 
-    const getDataUsers = async (): Promise<UserModelAPIModel[]> => {
-        const listUsers: Array<UserModelAPIModel> = [];
-        await axios.get("http://localhost:4000/api/v1/users").then((res: AxiosResponse<any, any>) => {
-            const dataRes: Array<any> = res.data.data;
-            dataRes.map((user) => {
-                listUsers.push({
-                    id: user["userId"],
-                    name: user["userName"],
-                    email: user["userEmail"],
-                    gender: user["userGender"] == "L" ? "Laki-laki" : "Perempuan",
-                });
-            });
-        });
-        return listUsers;
+    const refreshData = () => {
+        getAllUsers().then((res) => setRows(res));
+        setSelected([]);
     };
 
     const handleAddButton = (url: string) => {
-        const navigate = useNavigate();
-
         return () => {
             navigate(url);
         };
     };
 
-    const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof UserModelAPIModel) => {
+    const handleClickClose = () => {
+        setSearch("");
+    };
+
+    const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof UserAPIModel) => {
         const isAsc = orderBy === property && order === "asc";
         setOrder(isAsc ? "desc" : "asc");
         setOrderBy(property);
@@ -97,12 +105,12 @@ export default function DataUsersAPIScreen() {
         setSelected([]);
     };
 
-    const handleClick = (_event: React.MouseEvent<unknown>, id: number) => {
-        const selectedIndex = selected.indexOf(id);
+    const handleClickRow = (_event: React.MouseEvent<unknown>, docUid: number) => {
+        const selectedIndex = selected.indexOf(docUid);
         let newSelected: readonly number[] = [];
 
         if (selectedIndex === -1) {
-            newSelected = newSelected.concat(selected, id);
+            newSelected = newSelected.concat(selected, docUid);
         } else if (selectedIndex === 0) {
             newSelected = newSelected.concat(selected.slice(1));
         } else if (selectedIndex === selected.length - 1) {
@@ -129,90 +137,147 @@ export default function DataUsersAPIScreen() {
 
     const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
-    return (
-        <Box sx={{ width: "100%" }}>
-            <AppBreadcrumbs mainMenu="UsersFirebaseFb" />
-            <Stack direction="row" sx={{ mb: 2 }} justifyItems="end">
-                <Button variant="contained" onClick={handleAddButton(routeAddDataUsersAPI)} sx={{ width: 200 }}>
-                    Add Users
-                </Button>
-                <Box sx={{ width: "100%" }} />
-                <FormControlLabel
-                    label="Dense padding:"
-                    labelPlacement="start"
-                    control={<Switch checked={dense} onChange={handleChangeDense} />}
-                    sx={{ width: 300 }}
-                />
-            </Stack>
-            <Paper sx={{ width: "100%", mb: 2 }}>
-                <EnhancedTableToolbar numSelected={selected.length} />
-                <TableContainer>
-                    <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={dense ? "small" : "medium"}>
-                        <EnhancedTableHead
-                            numSelected={selected.length}
-                            order={order}
-                            orderBy={orderBy}
-                            onSelectAllClick={handleSelectAllClick}
-                            onRequestSort={handleRequestSort}
-                            rowCount={visibleRows.length}
-                        />
-                        <TableBody>
-                            {visibleRows.map((row, index) => {
-                                const isItemSelected = isSelected(row.id);
-                                const labelId = `enhanced-table-checkbox-${index}`;
+    const handleDeletedOk = async () => {
+        setLoadingDialog(true);
+        if (selected.length == 1 && userDataSelected != null) {
+            deleteUser(userDataSelected.id).finally(() => {
+                setLoadingDialog(false);
+                setOpenDialog(false);
+                refreshData();
+                setSearch("");
+            });
+        } else {
+            if (selected.length > 0) {
+                let deletedProgress = 0;
+                selected.forEach(async (id) => {
+                    deletedProgress++;
+                    deleteUser(id).finally(() => {
+                        if (selected.length == deletedProgress) {
+                            setLoadingDialog(false);
+                            setOpenDialog(false);
+                            refreshData();
+                            setSearch("");
+                        }
+                    });
+                });
+            }
+        }
+    };
 
-                                return (
+    if (onLoad) {
+        return <LoadingScreen />;
+    } else {
+        return (
+            <Box sx={{ width: "100%" }}>
+                <AppBreadcrumbs mainMenu="DataUsersApi" />
+                <Stack direction="row" sx={{ mb: 2 }} justifyItems="end">
+                    <Button variant="contained" onClick={handleAddButton(routeAddDataUsersAPI)} sx={{ width: 200 }}>
+                        Add Users
+                    </Button>
+                    <Box sx={{ width: "100%" }} />
+                    <FormControlLabel
+                        label="Dense padding:"
+                        labelPlacement="start"
+                        control={<Switch checked={dense} onChange={handleChangeDense} />}
+                        sx={{ width: 300 }}
+                    />
+                </Stack>
+                <Paper sx={{ width: "100%", mb: 2 }}>
+                    <EnhancedTableToolbar
+                        numSelected={selected.length}
+                        userData={userDataSelected}
+                        open={openDialog}
+                        setOpen={setOpenDialog}
+                        setSelected={setSelected}
+                        children={
+                            <SearchBoxTable
+                                datas={rows}
+                                searchValue={search}
+                                setSearch={setSearch}
+                                setResult={setSearchResult}
+                                handleClickClose={handleClickClose}
+                            />
+                        }
+                    />
+                    <TableContainer>
+                        <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={dense ? "small" : "medium"}>
+                            <EnhancedTableHead
+                                numSelected={selected.length}
+                                order={order}
+                                orderBy={orderBy}
+                                onSelectAllClick={handleSelectAllClick}
+                                onRequestSort={handleRequestSort}
+                                rowCount={visibleRows.length}
+                            />
+                            <TableBody>
+                                {visibleRows.map((row, index) => {
+                                    const isItemSelected = isSelected(row.id);
+                                    const labelId = `enhanced-table-checkbox-${index}`;
+
+                                    return (
+                                        <TableRow
+                                            key={index}
+                                            hover
+                                            onClick={(event) => {
+                                                setUserDataSelected(row);
+                                                handleClickRow(event, row.id);
+                                            }}
+                                            role="checkbox"
+                                            aria-checked={isItemSelected}
+                                            tabIndex={-1}
+                                            selected={isItemSelected}
+                                            sx={{ cursor: "pointer" }}
+                                        >
+                                            <TableCell padding="checkbox">
+                                                <Checkbox
+                                                    color="primary"
+                                                    checked={isItemSelected}
+                                                    inputProps={{
+                                                        "aria-labelledby": labelId,
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell component="th" id={labelId} scope="row" padding="none">
+                                                {row.name}
+                                            </TableCell>
+                                            <TableCell align="right">{row.email}</TableCell>
+                                            <TableCell align="right">{row.gender}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                                {emptyRows > 0 && (
                                     <TableRow
-                                        key={index}
-                                        hover
-                                        onClick={(event) => handleClick(event, row.id)}
-                                        role="checkbox"
-                                        aria-checked={isItemSelected}
-                                        tabIndex={-1}
-                                        selected={isItemSelected}
-                                        sx={{ cursor: "pointer" }}
+                                        style={{
+                                            height: (dense ? 33 : 53) * emptyRows,
+                                        }}
                                     >
-                                        <TableCell padding="checkbox">
-                                            <Checkbox
-                                                color="primary"
-                                                checked={isItemSelected}
-                                                inputProps={{
-                                                    "aria-labelledby": labelId,
-                                                }}
-                                            />
-                                        </TableCell>
-                                        <TableCell component="th" id={labelId} scope="row" padding="none">
-                                            {row.name}
-                                        </TableCell>
-                                        <TableCell align="right">{row.email}</TableCell>
-                                        <TableCell align="right">{row.gender}</TableCell>
+                                        <TableCell colSpan={6} />
                                     </TableRow>
-                                );
-                            })}
-                            {emptyRows > 0 && (
-                                <TableRow
-                                    style={{
-                                        height: (dense ? 33 : 53) * emptyRows,
-                                    }}
-                                >
-                                    <TableCell colSpan={6} />
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
-                    component="div"
-                    count={rows.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                />
-            </Paper>
-        </Box>
-    );
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={rows.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                    <AppDialog
+                        open={openDialog}
+                        title="Delete selected item?"
+                        content="Data ini akan terhapus selamanya."
+                        loading={loadingDialog}
+                        handleClose={() => setOpenDialog(false)}
+                        handleOk={handleDeletedOk}
+                    />
+                </Paper>
+            </Box>
+        );
+    }
 }
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -225,7 +290,7 @@ function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
     return 0;
 }
 
-function getComparator<Key extends keyof UserModelAPIModel>(
+function getComparator<Key extends keyof UserAPIModel>(
     order: Order,
     orderBy: Key
 ): (a: { [key in Key]: string | number }, b: { [key in Key]: string | number }) => number {
@@ -248,7 +313,7 @@ function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) 
 
 function EnhancedTableHead(props: EnhancedTableProps) {
     const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-    const createSortHandler = (property: keyof UserModelAPIModel) => (event: React.MouseEvent<unknown>) => {
+    const createSortHandler = (property: keyof UserAPIModel) => (event: React.MouseEvent<unknown>) => {
         onRequestSort(event, property);
     };
 
@@ -293,7 +358,12 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-    const { numSelected } = props;
+    const navigate = useNavigate();
+    const numSelected = props.numSelected;
+    const children = props.children;
+    const userData = props.userData;
+    const setOpen = props.setOpen;
+    const setSelected = props.setSelected;
 
     return (
         <Toolbar
@@ -310,36 +380,58 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
                     {numSelected} selected
                 </Typography>
             ) : (
-                <Typography sx={{ flex: "1 1 100%" }} variant="h6" id="tableTitle" component="div">
-                    Nutrition
-                </Typography>
+                children
             )}
             {numSelected > 1 ? (
-                <Tooltip title="Delete">
-                    <IconButton sx={{ color: "red" }}>
-                        <DeleteIcon />
-                    </IconButton>
-                </Tooltip>
+                <Stack direction="row">
+                    <Tooltip title="Delete">
+                        <IconButton onClick={() => handleClickDeleteAllSelected(setOpen)} sx={{ color: "red" }}>
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Clear Selected">
+                        <IconButton onClick={() => handleClickClearSelected(setSelected)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Tooltip>
+                </Stack>
             ) : numSelected == 1 ? (
                 <Stack direction="row">
-                    <Tooltip title="Filter list">
-                        <IconButton>
+                    <Tooltip title="Edit">
+                        <IconButton onClick={() => (userData ? handleClickEdit(userData, navigate) : null)}>
                             <EditIcon />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                        <IconButton sx={{ color: "red" }}>
+                        <IconButton onClick={() => handleClickDelete(setOpen)} sx={{ color: "red" }}>
                             <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Clear Selected">
+                        <IconButton onClick={() => handleClickClearSelected(setSelected)}>
+                            <CloseIcon />
                         </IconButton>
                     </Tooltip>
                 </Stack>
             ) : (
-                <Tooltip title="Filter list">
-                    <IconButton>
-                        <FilterListIcon />
-                    </IconButton>
-                </Tooltip>
+                <></>
             )}
         </Toolbar>
     );
+}
+
+function handleClickEdit(userData: UserAPIModel, navigate: NavigateFunction) {
+    navigate(routeUpdateDataUsersAPI, { state: userData });
+}
+
+function handleClickDelete(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {
+    setOpen(true);
+}
+
+function handleClickClearSelected(setSelected: React.Dispatch<React.SetStateAction<readonly number[]>>) {
+    setSelected([]);
+}
+
+function handleClickDeleteAllSelected(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {
+    setOpen(true);
 }
