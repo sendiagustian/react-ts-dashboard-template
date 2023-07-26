@@ -1,4 +1,3 @@
-import * as React from "react";
 import { styled, useTheme, Theme, CSSObject } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
@@ -17,39 +16,68 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import AdbIcon from "@mui/icons-material/Adb";
-import { routeMenus, routeSettings } from "../constants/RouteMenuList";
-import { useNavigate } from "react-router-dom";
+import { routeMainMenus, routePath, routeSettingMenus } from "../routes/RouteMenuList";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { MenuModel } from "../models/MenuModel";
+import AccountCircle from "@mui/icons-material/AccountCircle";
+import MenuItem from "@mui/material/MenuItem";
+import Menu from "@mui/material/Menu";
 
 const drawerWidth = 240;
 
-interface AppDrawerDynamicProps {
-    screen: JSX.Element;
-    title: string;
-}
-export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
+export default function AppDrawerDynamic() {
+    const location = useLocation();
     const theme = useTheme();
-    const [open, setOpen] = React.useState(false);
+
+    const [openSideMenu, setOpenSideMenu] = useState(true);
+    const [title, setTitle] = useState("");
+
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    useEffect(() => {
+        routeMainMenus.forEach((menu) => {
+            if (location.pathname === menu.url) {
+                setTitle(menu.name);
+            } else {
+                routeSettingMenus.forEach((setting) => {
+                    if (location.pathname === setting.url) {
+                        setTitle(setting.name);
+                    }
+                });
+            }
+        });
+    }, []);
+
+    const handleCloseProfileMenu = () => {
+        setAnchorEl(null);
+    };
+
+    const handleClickProfileMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
 
     const handleDrawerOpen = () => {
-        setOpen(true);
+        setOpenSideMenu(true);
     };
 
     const handleDrawerClose = () => {
-        setOpen(false);
+        setOpenSideMenu(false);
     };
 
-    function handleClickMenu(url: string) {
+    function handleClickMenu(menu: MenuModel) {
         const navigate = useNavigate();
 
         return () => {
-            navigate(url);
+            setTitle(menu.name);
+            navigate(menu.url);
         };
     }
 
     return (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />
-            <AppBar position="fixed" open={open}>
+            <AppBar position="fixed" open={openSideMenu}>
                 <Toolbar>
                     <IconButton
                         color="inherit"
@@ -58,17 +86,28 @@ export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
                         edge="start"
                         sx={{
                             marginRight: 5,
-                            ...(open && { display: "none" }),
+                            ...(openSideMenu && { display: "none" }),
                         }}
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap component="div">
-                        {drawerProps.title}
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                        {title}
                     </Typography>
+                    <IconButton
+                        size="large"
+                        aria-label="account of current user"
+                        aria-controls="menu-appbar"
+                        aria-haspopup="true"
+                        onClick={handleClickProfileMenu}
+                        color="inherit"
+                    >
+                        <AccountCircle />
+                    </IconButton>
+                    <MenuProfileIcon anchorEl={anchorEl} handleClose={handleCloseProfileMenu} />
                 </Toolbar>
             </AppBar>
-            <Drawer variant="permanent" open={open}>
+            <Drawer variant="permanent" open={openSideMenu}>
                 <DrawerHeader>
                     <AdbIcon sx={{ mr: 1 }} />
                     <Typography
@@ -90,24 +129,24 @@ export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
                 </DrawerHeader>
                 <Divider />
                 <List>
-                    {routeMenus.map((mainMenu, index) => (
+                    {routeMainMenus.map((mainMenu, index) => (
                         <ListItem
                             key={index}
                             disablePadding
                             sx={{ display: "block", background: isSelected(mainMenu.url) ? "#e3f2fd" : "null" }}
                         >
                             <ListItemButton
-                                onClick={handleClickMenu(mainMenu.url)}
+                                onClick={handleClickMenu(mainMenu)}
                                 sx={{
                                     minHeight: 48,
-                                    justifyContent: open ? "initial" : "center",
+                                    justifyContent: openSideMenu ? "initial" : "center",
                                     px: 2.5,
                                 }}
                             >
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 0,
-                                        mr: open ? 3 : "auto",
+                                        mr: openSideMenu ? 3 : "auto",
                                         justifyContent: "center",
                                         color: isSelected(mainMenu.url) ? "black" : "white",
                                     }}
@@ -116,7 +155,10 @@ export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={mainMenu.name}
-                                    sx={{ opacity: open ? 1 : 0, color: isSelected(mainMenu.url) ? "black" : "white" }}
+                                    sx={{
+                                        opacity: openSideMenu ? 1 : 0,
+                                        color: isSelected(mainMenu.url) ? "black" : "white",
+                                    }}
                                 />
                             </ListItemButton>
                         </ListItem>
@@ -124,31 +166,37 @@ export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
                 </List>
                 <Divider />
                 <List>
-                    {routeSettings.map((settingMenu, index) => (
+                    {routeSettingMenus.map((settingMenu, index) => (
                         <ListItem
                             key={index}
                             disablePadding
                             sx={{ display: "block", background: isSelected(settingMenu.url) ? "#e3f2fd" : "null" }}
                         >
                             <ListItemButton
-                                onClick={handleClickMenu(settingMenu.url)}
+                                onClick={handleClickMenu(settingMenu)}
                                 sx={{
                                     minHeight: 48,
-                                    justifyContent: open ? "initial" : "center",
+                                    justifyContent: openSideMenu ? "initial" : "center",
                                     px: 2.5,
                                 }}
                             >
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 0,
-                                        mr: open ? 3 : "auto",
+                                        mr: openSideMenu ? 3 : "auto",
                                         justifyContent: "center",
                                         color: isSelected(settingMenu.url) ? "black" : "white",
                                     }}
                                 >
                                     {settingMenu.icon}
                                 </ListItemIcon>
-                                <ListItemText primary={settingMenu.name} sx={{ opacity: open ? 1 : 0 }} />
+                                <ListItemText
+                                    primary={settingMenu.name}
+                                    sx={{
+                                        opacity: openSideMenu ? 1 : 0,
+                                        color: isSelected(settingMenu.url) ? "black" : "white",
+                                    }}
+                                />
                             </ListItemButton>
                         </ListItem>
                     ))}
@@ -156,7 +204,7 @@ export default function AppDrawerDynamic(drawerProps: AppDrawerDynamicProps) {
             </Drawer>
             <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", p: 3 }}>
                 <Toolbar />
-                {drawerProps.screen}
+                <Outlet />
             </Box>
         </Box>
     );
@@ -236,3 +284,42 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
         "& .MuiDrawer-paper": closedMixin(theme),
     }),
 }));
+
+const MenuProfileIcon = (props: { anchorEl: null | HTMLElement; handleClose(): void }) => {
+    const navigate = useNavigate();
+    return (
+        <Menu
+            sx={{ mt: "40px" }}
+            anchorEl={props.anchorEl}
+            anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+            }}
+            keepMounted
+            transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+            }}
+            open={Boolean(props.anchorEl)}
+            onClose={props.handleClose}
+        >
+            <MenuItem
+                onClick={() => {
+                    props.handleClose;
+                    navigate(routePath.profile);
+                }}
+            >
+                Profile
+            </MenuItem>
+            <MenuItem
+                onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                    props.handleClose;
+                }}
+            >
+                Logout
+            </MenuItem>
+        </Menu>
+    );
+};

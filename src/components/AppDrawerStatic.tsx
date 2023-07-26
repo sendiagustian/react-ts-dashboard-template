@@ -10,13 +10,17 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import AdbIcon from "@mui/icons-material/Adb";
-import { useLocation, useNavigate } from "react-router-dom";
-import { routeMenus, routeSettings } from "../constants/RouteMenuList";
+import { useLocation, useNavigate, Outlet } from "react-router-dom";
+import { routeMainMenus, routeSettingMenus } from "../routes/RouteMenuList";
+import { useState } from "react";
+import { MenuModel } from "../models/MenuModel";
 
 const drawerWidth = 240;
 
-const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
+export default function AppDrawerStatic() {
     const location = useLocation();
+
+    const [title, setTitle] = useState("Dashboard");
 
     function isSelected(url: string): boolean {
         if (location.pathname == url) {
@@ -26,11 +30,12 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
         }
     }
 
-    function handleClick(url: string) {
+    function handleClick(menu: MenuModel) {
         const navigate = useNavigate();
 
         return () => {
-            navigate(url);
+            setTitle(menu.name);
+            navigate(menu.url);
         };
     }
 
@@ -39,7 +44,7 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
             <AppBar position="fixed" sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}>
                 <Toolbar>
                     <Typography variant="h6" noWrap component="div">
-                        {props.title}
+                        {title}
                     </Typography>
                 </Toolbar>
             </AppBar>
@@ -73,7 +78,7 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
                 </Toolbar>
                 <Divider />
                 <List>
-                    {routeMenus.map((menu) => (
+                    {routeMainMenus.map((menu) => (
                         <ListItem
                             key={menu.url}
                             disablePadding
@@ -81,7 +86,7 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
                                 background: isSelected(menu.url) ? "#e3f2fd" : "null",
                             }}
                         >
-                            <ListItemButton onClick={handleClick(menu.url)}>
+                            <ListItemButton onClick={handleClick(menu)}>
                                 <ListItemIcon key={menu.name} sx={{ color: isSelected(menu.url) ? "black" : "white" }}>
                                     {menu.icon}
                                 </ListItemIcon>
@@ -95,7 +100,7 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
                 </List>
                 <Divider />
                 <List>
-                    {routeSettings.map((settings) => (
+                    {routeSettingMenus.map((settings) => (
                         <ListItem
                             key={settings.name}
                             disablePadding
@@ -103,7 +108,7 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
                                 background: isSelected(settings.url) ? "#e3f2fd" : "null",
                             }}
                         >
-                            <ListItemButton onClick={handleClick(settings.url)}>
+                            <ListItemButton onClick={handleClick(settings)}>
                                 <ListItemIcon sx={{ color: isSelected(settings.url) ? "black" : "white" }}>
                                     {settings.icon}
                                 </ListItemIcon>
@@ -118,10 +123,8 @@ const AppDrawer = (props: { screen: JSX.Element; title: string }) => {
             </Drawer>
             <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", p: 3 }}>
                 <Toolbar />
-                {props.screen}
+                <Outlet />
             </Box>
         </Box>
     );
-};
-
-export default AppDrawer;
+}

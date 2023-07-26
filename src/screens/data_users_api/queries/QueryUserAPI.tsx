@@ -1,23 +1,25 @@
 import axios, { AxiosResponse } from "axios";
 import { UserAPIModel } from "../../../models/UserAPIModel";
-import { routeDataUsersAPI } from "../../../routes/AppRoutes";
+import { routePath } from "../../../routes/RouteMenuList";
 import { NavigateFunction } from "react-router-dom";
 
 export const getAllUsers = async () => {
     const listUsers: Array<UserAPIModel> = [];
     try {
-        await axios.get("http://localhost:4000/api/v1/users").then((res: AxiosResponse<any, any>) => {
-            const dataRes: Array<any> = res.data.data;
-            dataRes.map((user) => {
-                listUsers.push({
-                    id: user["userId"],
-                    name: user["userName"],
-                    email: user["userEmail"],
-                    password: user["userPassword"],
-                    gender: user["userGender"] == "L" ? "Laki-laki" : "Perempuan",
+        await axios
+            .get("https://welcomed-perfectly-lacewing.ngrok-free.app/api/v1/users")
+            .then((res: AxiosResponse<any, any>) => {
+                const dataRes: Array<any> = res.data.data;
+                dataRes.map((user) => {
+                    listUsers.push({
+                        id: user["userId"],
+                        name: user["userName"],
+                        email: user["userEmail"],
+                        password: user["userPassword"],
+                        gender: user["userGender"] == "L" ? "Laki-laki" : "Perempuan",
+                    });
                 });
             });
-        });
     } catch (error) {
         console.log(error);
     }
@@ -26,7 +28,7 @@ export const getAllUsers = async () => {
 
 export const deleteUser = async (id: number) => {
     try {
-        await axios.delete(`http://localhost:4000/api/v1/users/delete/${id}`);
+        await axios.delete(`https://welcomed-perfectly-lacewing.ngrok-free.app/api/v1/users/delete/${id}`);
     } catch (error) {
         console.log(error);
     }
@@ -43,8 +45,8 @@ export const addUser = async (
 ) => {
     try {
         await axios
-            .post("http://localhost:4000/api/v1/users/register", userDataAdd)
-            .finally(() => navigate(routeDataUsersAPI));
+            .post("https://welcomed-perfectly-lacewing.ngrok-free.app/api/v1/users/register", userDataAdd)
+            .finally(() => navigate(routePath.dataUsersAPI));
     } catch (error) {
         console.log(error);
     }
@@ -62,8 +64,8 @@ export const updateUser = async (
 ) => {
     try {
         await axios
-            .put(`http://localhost:4000/api/v1/users/update/${id}`, userDataUpdate)
-            .finally(() => navigate(routeDataUsersAPI));
+            .put(`https://welcomed-perfectly-lacewing.ngrok-free.app/api/v1/users/update/${id}`, userDataUpdate)
+            .finally(() => navigate(routePath.dataUsersAPI));
     } catch (error) {
         console.log(error);
     }

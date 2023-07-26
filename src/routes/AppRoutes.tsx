@@ -1,7 +1,5 @@
 import NotFoundScreen from "../screens/NotFoundScreen";
-import DashboardScreen from "../screens/DashboardScreen";
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import AppDrawerDynamic from "../components/AppDrawerDynamic";
 import DataUsersFirebaseScreen from "../screens/data_users_firebase/DataUsersFirebaseScreen";
 import SettingsScreen from "../screens/SettingsScreen";
@@ -11,60 +9,42 @@ import DataUsersAPIScreen from "../screens/data_users_api/DataUsersAPIScreen";
 import UpdateDataUserFirebaseScreen from "../screens/data_users_firebase/UpdateDataUserFirebaseScreen";
 import AddDataUsersAPIScreen from "../screens/data_users_api/AddDataUsersAPIScreen";
 import UpdateDataUsersAPIScreen from "../screens/data_users_api/UpdateDataUsersAPIScreen";
+import LoginScreen from "../screens/auth/LoginScreen";
 
-export const routeDashboard: string = "/";
-
-export const routeDataUsersFirebase: string = "/data-users-fb";
-export const routeAddDataUsersFirebase: string = "/data-users-fb/add-data-users-fb";
-export const routeUpdateDataUsersFirebase: string = "/data-users-fb/update-data-users-fb";
-
-export const routeDataUsersAPI: string = "/data-users-api";
-export const routeAddDataUsersAPI: string = "/data-users-api/add-data-users-api";
-export const routeUpdateDataUsersAPI: string = "/data-users-api/update-data-users-api";
-
-export const routeSettings: string = "/settings";
-export const routeProfile: string = "/Profile";
-
-const Dashboard: JSX.Element = <AppDrawerDynamic title="Dashboard Screen" screen={<DashboardScreen />} />;
-
-// CRUD With Firebase
-const DataUsersFirebase: JSX.Element = (
-    <AppDrawerDynamic title="Data Users Firebase" screen={<DataUsersFirebaseScreen />} />
-);
-const AddDataUserFirebase: JSX.Element = (
-    <AppDrawerDynamic title="Data Users Firebase" screen={<AddDataUserFirebaseScreen />} />
-);
-const UpdateDataUserFirebase: JSX.Element = (
-    <AppDrawerDynamic title="Data Users Firebase" screen={<UpdateDataUserFirebaseScreen />} />
-);
-
-const DataUsersAPI: JSX.Element = <AppDrawerDynamic title="Data Users API" screen={<DataUsersAPIScreen />} />;
-const AddDataUsersAPI: JSX.Element = <AppDrawerDynamic title="Add Data Users API" screen={<AddDataUsersAPIScreen />} />;
-const UpdateDataUsersAPI: JSX.Element = (
-    <AppDrawerDynamic title="Update Data Users API" screen={<UpdateDataUsersAPIScreen />} />
-);
-
-const Settings: JSX.Element = <AppDrawerDynamic title="Settings Screen" screen={<SettingsScreen />} />;
-const Profile: JSX.Element = <AppDrawerDynamic title="Profile Screen" screen={<ProfileScreen />} />;
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { routePath } from "./RouteMenuList";
 
 const AppRoutes = () => {
+    const token: string | null = localStorage.getItem("key-token");
+
     return (
         <BrowserRouter basename="/">
-            <Routes>
-                <Route index path="*" element={<NotFoundScreen />} />
-                <Route index path={routeDashboard} element={Dashboard} />
+            {token != null ? (
+                <Routes>
+                    <Route path="*" element={<NotFoundScreen />} />
+                    <Route path={routePath.profile} element={<ProfileScreen />} />
 
-                <Route index path={routeDataUsersFirebase} element={DataUsersFirebase} />
-                <Route index path={routeAddDataUsersFirebase} element={AddDataUserFirebase} />
-                <Route index path={routeUpdateDataUsersFirebase} element={UpdateDataUserFirebase} />
+                    <Route path="/" element={<AppDrawerDynamic />}>
+                        <Route path={routePath.login} element={<Navigate to={routePath.dashboard} />} />
+                        <Route path={routePath.dashboard} element={<DashboardScreen />} />
 
-                <Route index path={routeDataUsersAPI} element={DataUsersAPI} />
-                <Route index path={routeAddDataUsersAPI} element={AddDataUsersAPI} />
-                <Route index path={routeUpdateDataUsersAPI} element={UpdateDataUsersAPI} />
+                        <Route path={routePath.dataUsersFirebase} element={<DataUsersFirebaseScreen />} />
+                        <Route path={routePath.addDataUsersFirebase} element={<AddDataUserFirebaseScreen />} />
+                        <Route path={routePath.updateDataUsersFirebase} element={<UpdateDataUserFirebaseScreen />} />
 
-                <Route index path={routeSettings} element={Settings} />
-                <Route index path={routeProfile} element={Profile} />
-            </Routes>
+                        <Route path={routePath.dataUsersAPI} element={<DataUsersAPIScreen />} />
+                        <Route path={routePath.addDataUsersAPI} element={<AddDataUsersAPIScreen />} />
+                        <Route path={routePath.updateDataUsersAPI} element={<UpdateDataUsersAPIScreen />} />
+
+                        <Route path={routePath.settings} element={<SettingsScreen />} />
+                    </Route>
+                </Routes>
+            ) : (
+                <Routes>
+                    <Route path="*" element={<Navigate to={routePath.login} />} />
+                    <Route path={routePath.login} element={<LoginScreen />} />
+                </Routes>
+            )}
         </BrowserRouter>
     );
 };

@@ -27,7 +27,7 @@ import { visuallyHidden } from "@mui/utils";
 import { useEffect, useMemo, useState } from "react";
 import { UserAPIModel } from "../../models/UserAPIModel";
 import { NavigateFunction, useNavigate } from "react-router-dom";
-import { routeAddDataUsersAPI, routeUpdateDataUsersAPI } from "../../routes/AppRoutes";
+import { routePath } from "../../routes/RouteMenuList";
 import { headCells } from "./data/HeadCell";
 import { EnhancedTableProps } from "./props/EnhancedTableProps";
 import { Order } from "./data/Order";
@@ -65,7 +65,7 @@ export default function DataUsersFirestoreScreen() {
     }, []);
 
     const visibleRows = useMemo(() => {
-        if (search != "" && search.length > 3) {
+        if (search != "" && search.length > 0) {
             return searchResults;
         } else {
             return stableSort<UserAPIModel>(rows, getComparator(order, orderBy)).slice(
@@ -171,7 +171,11 @@ export default function DataUsersFirestoreScreen() {
             <Box sx={{ width: "100%" }}>
                 <AppBreadcrumbs mainMenu="DataUsersApi" />
                 <Stack direction="row" sx={{ mb: 2 }} justifyItems="end">
-                    <Button variant="contained" onClick={handleAddButton(routeAddDataUsersAPI)} sx={{ width: 200 }}>
+                    <Button
+                        variant="contained"
+                        onClick={handleAddButton(routePath.addDataUsersAPI)}
+                        sx={{ width: 200 }}
+                    >
                         Add Users
                     </Button>
                     <Box sx={{ width: "100%" }} />
@@ -193,6 +197,7 @@ export default function DataUsersFirestoreScreen() {
                             <SearchBoxTable
                                 datas={rows}
                                 searchValue={search}
+                                searchBy="name"
                                 setSearch={setSearch}
                                 setResult={setSearchResult}
                                 handleClickClose={handleClickClose}
@@ -421,7 +426,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 }
 
 function handleClickEdit(userData: UserAPIModel, navigate: NavigateFunction) {
-    navigate(routeUpdateDataUsersAPI, { state: userData });
+    navigate(routePath.updateDataUsersAPI, { state: userData });
 }
 
 function handleClickDelete(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {

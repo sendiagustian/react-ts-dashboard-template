@@ -11,7 +11,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { RoleModel } from "../../models/RoleModel";
 import { useNavigate } from "react-router-dom";
 import { SyntheticEvent, useState } from "react";
-import { routeDataUsersFirebase } from "../../routes/AppRoutes";
+import { routePath } from "../../routes/RouteMenuList";
 import { v4 as uuid } from "uuid";
 
 import { UserFirestoreModel } from "../../models/UserFirestoreModel";
@@ -54,7 +54,7 @@ export default function AddDataUserFirebaseScreen() {
         };
         addUser(uid, userDataAdd).then((_res) => {
             setAction(false);
-            navigate(routeDataUsersFirebase);
+            navigate(routePath.dataUsersFirebase);
         });
     }
 

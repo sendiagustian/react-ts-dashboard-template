@@ -11,7 +11,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { RoleModel } from "../../models/RoleModel";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SyntheticEvent, useState } from "react";
-import { routeDataUsersFirebase } from "../../routes/AppRoutes";
+import { routePath } from "../../routes/RouteMenuList";
 
 import { roles } from "./data/ListRoles";
 import slugify from "react-slugify";
@@ -59,7 +59,7 @@ export default function UpdateDataUserFirebaseScreen() {
 
         updateUser(uid, userDataUpdate).then((_res) => {
             setAction(false);
-            navigate(routeDataUsersFirebase);
+            navigate(routePath.dataUsersFirebase);
         });
     };
 
