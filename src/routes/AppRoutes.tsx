@@ -13,6 +13,8 @@ import LoginScreen from "../screens/auth/LoginScreen";
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { routePath } from "./RouteMenuList";
+import MapsScreen from "../screens/maps/MapsScreen";
+import SeaFileScreen from "../screens/sea_file/SeaFileScreen";
 
 const AppRoutes = () => {
     const token: string | null = localStorage.getItem("key-token");
@@ -35,6 +37,10 @@ const AppRoutes = () => {
                         <Route path={routePath.dataUsersAPI} element={<DataUsersAPIScreen />} />
                         <Route path={routePath.addDataUsersAPI} element={<AddDataUsersAPIScreen />} />
                         <Route path={routePath.updateDataUsersAPI} element={<UpdateDataUsersAPIScreen />} />
+
+                        <Route path={routePath.maps} element={<MapsScreen />} />
+
+                        <Route path={routePath.seaFile} element={<SeaFileScreen />} />
 
                         <Route path={routePath.settings} element={<SettingsScreen />} />
                     </Route>

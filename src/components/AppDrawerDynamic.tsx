@@ -1,6 +1,6 @@
 import { styled, useTheme, Theme, CSSObject } from "@mui/material/styles";
 import Box from "@mui/material/Box";
-import MuiDrawer from "@mui/material/Drawer";
+import MuiDrawer, { DrawerProps } from "@mui/material/Drawer";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import List from "@mui/material/List";
@@ -23,14 +23,14 @@ import { MenuModel } from "../models/MenuModel";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
-
-const drawerWidth = 240;
+import { useGlobal } from "../context/GlobalContext";
 
 export default function AppDrawerDynamic() {
     const location = useLocation();
     const theme = useTheme();
 
-    const [openSideMenu, setOpenSideMenu] = useState(true);
+    const { drawerWidth, openSideMenu, setOpenSideMenu } = useGlobal();
+
     const [title, setTitle] = useState("");
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -48,6 +48,14 @@ export default function AppDrawerDynamic() {
             }
         });
     }, []);
+
+    function isSelected(url: string): boolean {
+        if (location.pathname == url) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     const handleCloseProfileMenu = () => {
         setAnchorEl(null);
@@ -77,7 +85,7 @@ export default function AppDrawerDynamic() {
     return (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />
-            <AppBar position="fixed" open={openSideMenu}>
+            <AppBar position="fixed" width={drawerWidth} open={openSideMenu}>
                 <Toolbar>
                     <IconButton
                         color="inherit"
@@ -107,7 +115,7 @@ export default function AppDrawerDynamic() {
                     <MenuProfileIcon anchorEl={anchorEl} handleClose={handleCloseProfileMenu} />
                 </Toolbar>
             </AppBar>
-            <Drawer variant="permanent" open={openSideMenu}>
+            <Drawer variant="permanent" open={openSideMenu} width={drawerWidth}>
                 <DrawerHeader>
                     <AdbIcon sx={{ mr: 1 }} />
                     <Typography
@@ -121,7 +129,7 @@ export default function AppDrawerDynamic() {
                             textDecoration: "none",
                         }}
                     >
-                        REACT X FB
+                        RESEARCH
                     </Typography>
                     <IconButton onClick={handleDrawerClose}>
                         {theme.direction === "rtl" ? <ChevronRightIcon /> : <ChevronLeftIcon />}
@@ -210,7 +218,7 @@ export default function AppDrawerDynamic() {
     );
 }
 
-const openedMixin = (theme: Theme): CSSObject => ({
+const openedMixin = (drawerWidth: number, theme: Theme): CSSObject => ({
     width: drawerWidth,
     transition: theme.transitions.create("width", {
         easing: theme.transitions.easing.sharp,
@@ -218,14 +226,6 @@ const openedMixin = (theme: Theme): CSSObject => ({
     }),
     overflowX: "hidden",
 });
-
-function isSelected(url: string): boolean {
-    if (location.pathname == url) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 const closedMixin = (theme: Theme): CSSObject => ({
     transition: theme.transitions.create("width", {
@@ -249,20 +249,20 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 }));
 
 interface AppBarProps extends MuiAppBarProps {
+    width: number;
     open?: boolean;
 }
-
 const AppBar = styled(MuiAppBar, {
     shouldForwardProp: (prop) => prop !== "open",
-})<AppBarProps>(({ theme, open }) => ({
+})<AppBarProps>(({ width, theme, open }) => ({
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(["width", "margin"], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
     }),
     ...(open && {
-        marginLeft: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
+        marginLeft: width,
+        width: `calc(100% - ${width}px)`,
         transition: theme.transitions.create(["width", "margin"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
@@ -270,14 +270,20 @@ const AppBar = styled(MuiAppBar, {
     }),
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(({ theme, open }) => ({
-    width: drawerWidth,
+interface MuiDrawerProps extends DrawerProps {
+    width: number;
+    open?: boolean;
+}
+const Drawer = styled(MuiDrawer, {
+    shouldForwardProp: (prop) => prop !== "open",
+})<MuiDrawerProps>(({ width, theme, open }) => ({
+    width: width,
     flexShrink: 0,
     whiteSpace: "nowrap",
     boxSizing: "border-box",
     ...(open && {
-        ...openedMixin(theme),
-        "& .MuiDrawer-paper": openedMixin(theme),
+        ...openedMixin(width, theme),
+        "& .MuiDrawer-paper": openedMixin(width, theme),
     }),
     ...(!open && {
         ...closedMixin(theme),
@@ -285,7 +291,11 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
     }),
 }));
 
-const MenuProfileIcon = (props: { anchorEl: null | HTMLElement; handleClose(): void }) => {
+interface MenuProfileProps {
+    anchorEl: null | HTMLElement;
+    handleClose(): void;
+}
+const MenuProfileIcon = (props: MenuProfileProps) => {
     const navigate = useNavigate();
     return (
         <Menu
