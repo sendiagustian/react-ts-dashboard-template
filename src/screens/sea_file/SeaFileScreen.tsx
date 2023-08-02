@@ -1,33 +1,53 @@
 import { Button, Stack, Typography } from "@mui/material";
 import AppBreadcrumbs from "../../components/Breadcrumbs";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LoadingButton from "@mui/lab/LoadingButton";
 import SendIcon from "@mui/icons-material/Send";
 import { useGlobal } from "../../context/GlobalContext";
 import { uploadFile } from "./queries/QuerySeaFile";
+import axios, { AxiosRequestConfig } from "axios";
 
 export default function SeaFileScreen() {
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<File | null>(null);
+    const [resLink, setResLink] = useState("");
 
-    const { isAction, setAction } = useGlobal();
+    const { onActioning, setActioning } = useGlobal();
 
     const handleClickButton = (): void => {
         uploadInputRef.current && uploadInputRef.current.click();
     };
 
-    const handleSubmit = async () => {
-        setAction(true);
+    useEffect(() => {
+        const reqHeader: AxiosRequestConfig = {
+            headers: {
+                Authorization: `Token fd44f519e43804f8f0f14880f4060898bfcdfe54`,
+            },
+        };
 
+        axios
+            .get(
+                "https://seafile.protonema.co.id/api2/repos/f037b658-bf74-4269-8ce4-b3c98fb2ca9e/upload-link/?p=/",
+                reqHeader
+            )
+            .then((res) => {
+                setResLink(res.data);
+                console.log(resLink);
+            });
+    }, []);
+
+    const handleSubmit = async () => {
+        setActioning(true);
+
+        // getUploadLink();
         if (files !== null) {
-            // getToken();
-            await uploadFile({
+            await uploadFile(resLink, {
                 file: files,
                 parent_dir: "/",
                 replace: 1,
             }).then((res) => {
                 console.log(res);
-                setAction(false);
+                setActioning(false);
                 setFiles(null);
             });
         }
@@ -57,7 +77,7 @@ export default function SeaFileScreen() {
             ) : (
                 <LoadingButton
                     endIcon={<SendIcon />}
-                    loading={isAction}
+                    loading={onActioning}
                     loadingPosition="end"
                     variant="contained"
                     onClick={handleSubmit}

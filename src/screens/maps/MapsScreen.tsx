@@ -13,11 +13,12 @@ export default function MapsScreen() {
     const heightScreen: string = "75.5vh";
 
     const { isLoaded } = useLoadScript({ googleMapsApiKey: apiKey });
-    const { openSideMenu, drawerWidth } = useGlobal();
+    const { openSideMenu, drawerWidth, onLoading, setLoading } = useGlobal();
 
     const [rowCustomers, setRowCustomers] = useState<Array<CustomerModel>>([]);
 
     useEffect(() => {
+        setLoading(true);
         axios
             .get("https://api-dev-paradina.quatronema.co.id/api/v1/customer/all", {
                 headers: {
@@ -34,6 +35,7 @@ export default function MapsScreen() {
                 });
                 if (customers.length === countDataAdded) {
                     setRowCustomers(results);
+                    setLoading(false);
                 }
             });
     }, []);
@@ -48,7 +50,7 @@ export default function MapsScreen() {
         lng: 112.7278907,
     };
 
-    if (!isLoaded) {
+    if (!isLoaded || onLoading) {
         return <LoadingScreen />;
     } else {
         return (

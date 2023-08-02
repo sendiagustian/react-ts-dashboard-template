@@ -4,8 +4,10 @@ interface GlobalContextType {
     drawerWidth: number;
     openSideMenu: boolean;
     setOpenSideMenu: (value: boolean) => void;
-    isAction: boolean;
-    setAction: (value: boolean) => void;
+    onActioning: boolean;
+    setActioning: (value: boolean) => void;
+    onLoading: boolean;
+    setLoading: (value: boolean) => void;
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -24,7 +26,8 @@ export const GlobalContextProvider = (props: { children: JSX.Element }) => {
     const drawerWidth = 240;
 
     const [openSideMenu, setOpenSideMenu] = useState(true);
-    const [isAction, setAction] = useState<boolean>(false);
+    const [onActioning, setActioning] = useState<boolean>(false);
+    const [onLoading, setLoading] = useState<boolean>(false);
 
     return (
         <GlobalContext.Provider
@@ -32,8 +35,10 @@ export const GlobalContextProvider = (props: { children: JSX.Element }) => {
                 drawerWidth,
                 openSideMenu,
                 setOpenSideMenu,
-                isAction,
-                setAction,
+                onActioning,
+                setActioning,
+                onLoading,
+                setLoading,
             }}
         >
             {props.children}
